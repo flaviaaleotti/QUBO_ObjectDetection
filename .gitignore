@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# folder where tests are run
+test*/
+
+# file with notes
+EXAMPLES_of_DATA_STRUCTURES.txt
