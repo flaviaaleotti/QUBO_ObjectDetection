@@ -34,11 +34,11 @@ logging.getLogger("torch").setLevel(logging.ERROR)
 sa_sampler = neal.SimulatedAnnealingSampler()
 
 # path to the file containing the ground truths for each image (called with an ID)
-instances_file = './coco2017/annotations/instances_val2017.json'
+instances_file = '../../coco2017/annotations/instances_val2017.json'
 coco = COCO(instances_file) #initialization
 
 # select only images that have people (and that have people as ground truth)
-catIds = coco.getCatIds(catNms=['person'])
+catIds = coco.getCatIds(catNms=['car'])
 image_IDs = coco.getImgIds(catIds=catIds) # Image IDs
 
 # we reduce the analysis to 300 images
@@ -46,7 +46,12 @@ if len(image_IDs) > 300:
     image_IDs = image_IDs[:300] 
 
 # DEVICE
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda") # NVIDIA GPU
+elif torch.backends.mps.is_available():
+    device = torch.device("mps") # Apple Silicon GPU
+else:
+    device = torch.device("cpu")
 print(f"Using {device}")
 
 # LOADING MODEL
@@ -83,7 +88,7 @@ for i, img_id in enumerate(image_IDs):
 
     # BOUNDING BOXES
     # image upload
-    image_path = f"./coco2017/val2017/{file_name}"
+    image_path = f"../../coco2017/val2017/{file_name}"
 
     # starting time for RCNN
     t_rcnn_start = time.perf_counter()
@@ -94,6 +99,8 @@ for i, img_id in enumerate(image_IDs):
     # cuda synchronization
     if device.type == 'cuda':
         torch.cuda.synchronize()
+    elif device.type == 'mps':
+        torch.mps.synchronize()
     t_rcnn_end = time.perf_counter()
 
     num_boxes = len(raw_boxes)

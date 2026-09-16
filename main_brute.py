@@ -26,21 +26,79 @@ logging.getLogger("torchvision").setLevel(logging.ERROR)
 logging.getLogger("torch").setLevel(logging.ERROR)
 
 # path to the file containing the ground truths for each image (called with an ID)
-instances_file = './coco2017/annotations/instances_val2017.json'
+instances_file = '../../coco2017/annotations/instances_val2017.json'
 coco = COCO(instances_file) #initialization
 
+TARGET_CATEGORIES = ['person', 'car']
+TARGET_CATEGORIES_IDX = coco.getCatIds(catNms=TARGET_CATEGORIES)
+
 # select only images that have people (and that have people as ground truth)
-catIds = coco.getCatIds(catNms=['person'])
-image_IDs = coco.getImgIds(catIds=catIds) # Image IDs
+image_IDs = coco.getImgIds(catIds=TARGET_CATEGORIES_IDX) # Image IDs
+
+print(f"Number of images with", end = ' ')
+for i in range(len(TARGET_CATEGORIES)):
+    if i == len(TARGET_CATEGORIES) - 1:
+        print(TARGET_CATEGORIES[i] + ': ')
+    else:
+        print(TARGET_CATEGORIES[i], end=' and ')
+print(len(image_IDs))
 
 # ========================================================
 # image ID we like to analyze
+image_IDs = [258793, 361506, 315187, 74058, 436738, 97679, 414510] #, 495146] --> last image only with GPU
+
+# ORIGINAL SET FROM THESIS
 # !!! use the instance 213035 (31 box) only with GPU
-image_IDs = [532481, 270908, 458755, 213035] # 5, 14, 23, 13 boxes
+#image_IDs = [532481, 270908, 458755, 213035] # 5, 14, 23, 31 boxes
+'''
+# FULL SET OF IMAGES FROM COCO VALIDATION SET CONTAINING PERSON AND CAR (359 images)
+image_IDs = [532481, 184324, 546823, 393226, 102411, 169996, 67616, 397351, 555050, 477227, 
+             284725, 157756, 507975, 204871, 356424, 301135, 231508, 505942, 98392, 442456, 
+             30828, 342128, 127092, 319607, 346232, 391290, 292997, 309391, 243867, 194716, 
+             192670, 32941, 278705, 334006, 446651, 303305, 84170, 86220, 192716, 426203, 
+             278749, 424162, 276707, 157928, 135410, 313588, 57597, 200961, 356612, 213255, 
+             160012, 147725, 198928, 100624, 147740, 426268, 127263, 411938, 184611, 383289, 
+             565563, 579902, 301376, 278848, 209222, 57672, 74058, 545100, 567640, 475484, 
+             336232, 260470, 442746, 526728, 577932, 31118, 18837, 102805, 151962, 121242, 
+             428454, 156071, 135604, 563653, 33221, 303566, 86483, 176606, 334309, 111086, 
+             295420, 68093, 137727, 436738, 84492, 277005, 395801, 514586, 45596, 94751, 
+             334371, 191013, 553511, 492077, 512564, 408120, 221754, 287291, 39484, 227898, 
+             324158, 555597, 113235, 213593, 297562, 504415, 213605, 172648, 373353, 297578, 
+             230008, 436883, 215723, 414385, 363188, 361142, 283318, 338624, 338625, 553669, 
+             303818, 309964, 47828, 211674, 334555, 266981, 320232, 258793, 242411, 432898, 
+             336658, 480021, 506656, 449312, 369442, 414510, 273198, 25393, 17207, 289594, 
+             488251, 260925, 580418, 568147, 158548, 506707, 254814, 549738, 463730, 295809, 
+             82821, 314251, 326541, 537506, 293794, 396200, 5037, 7088, 521141, 461751, 11197, 
+             144333, 517069, 183246, 515025, 476119, 160728, 394206, 33759, 568290, 463849, 
+             437239, 566282, 64523, 273420, 424975, 381971, 158744, 148508, 361506, 162858, 
+             521259, 396338, 433204, 429109, 33854, 367680, 179265, 365642, 42070, 281687, 
+             410712, 377946, 511076, 119911, 87144, 564336, 226417, 27768, 441468, 142472, 
+             289938, 40083, 369812, 468124, 457884, 382111, 38048, 58539, 165039, 343218, 
+             193717, 453841, 167122, 169169, 17627, 115946, 146667, 163057, 142585, 410880, 
+             394510, 345361, 378139, 296224, 181542, 322864, 122166, 269632, 54593, 570688, 
+             21839, 130386, 560474, 210273, 161128, 357737, 433515, 468332, 460147, 128372, 
+             171382, 85376, 290179, 138639, 97679, 146831, 398742, 183709, 153011, 490936, 
+             105912, 357816, 132544, 105923, 343496, 224724, 384468, 499181, 226802, 81394, 
+             478721, 136715, 392722, 513567, 208423, 495146, 407083, 196141, 44590, 181816, 
+             460347, 220732, 230983, 245320, 228942, 421455, 419408, 32334, 458325, 521819, 
+             26204, 212573, 259690, 427655, 130699, 67213, 206487, 9891, 349860, 157365, 
+             54967, 423617, 177861, 569030, 296649, 491213, 155341, 542423, 138979, 493286, 
+             134886, 69356, 538364, 575243, 177934, 511760, 507667, 46872, 284445, 380706, 
+             550691, 165681, 376625, 315187, 350003, 378673, 65350, 350023, 520009, 198489, 
+             139099, 313182, 261982, 274272, 55150, 124798, 55167, 393093, 188296, 319369, 
+             470924, 329614, 507797, 6040, 567197, 341921, 176037, 343976, 255917, 464824, 
+             350148, 425925, 491464, 344029, 274411, 417779, 413689, 511999]
+'''
 # ========================================================
 
 # DEVICE
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda") # NVIDIA GPU
+elif torch.backends.mps.is_available():
+    device = torch.device("mps") # Apple Silicon GPU
+else:
+    device = torch.device("cpu")
+
 print(f"Using {device}")
 
 # LOADING MODEL
@@ -70,49 +128,57 @@ for i, img_id in enumerate(image_IDs):
     file_name = img_info['file_name']
 
     # BOUNDING BOXES
-    image_path = f"./coco2017/val2017/{file_name}"
+    image_path = f"../../coco2017/val2017/{file_name}"
 
     t_rcnn_start = time.perf_counter()
-    raw_boxes, scores, original_image = RCNN.faster_rcnn(image_path, model, device) 
+    raw_boxes, scores, _, labels= RCNN.faster_rcnn(image_path, model, device, TARGET_CATEGORIES_IDX)
     
     if device.type == 'cuda':
         torch.cuda.synchronize()
+    elif device.type == 'mps':
+        torch.mps.synchronize()
     t_rcnn_end = time.perf_counter()
     
     valid_count +=1
 
-    boxes_xywh = []
-    for box in raw_boxes:
-        x1, y1, x2, y2 = box
+    boxes_xywh  = {i:[] for i in TARGET_CATEGORIES_IDX}
+    scores_dict = {i:[] for i in TARGET_CATEGORIES_IDX}
+        
+    for box in range(len(raw_boxes)):
+        x1, y1, x2, y2 = raw_boxes[box]
         w = x2 - x1  
         h = y2 - y1  
-        boxes_xywh.append([x1, y1, w, h]) 
+        boxes_xywh[labels[box]].append([x1, y1, w, h])
+        scores_dict[labels[box]].append(scores[box])
     
-    print(f"[{valid_count}] Id imm: {img_id} | Nome imm: {file_name} | Box trovate: {len(raw_boxes)} | Tempo RCNN: {t_rcnn_end - t_rcnn_start:.3f}s")
+    print(f"[{valid_count}] Id imm: {img_id} | Nome imm: {file_name} | ", end="")
+    for i in TARGET_CATEGORIES_IDX:
+        print(f"Box trovate per '{i}': {len(boxes_xywh[i])} | ", end="")
+    print(f"Tempo RCNN: {t_rcnn_end - t_rcnn_start:.3f}s")
 
     gpu_data.append({
         'image_id': img_id,
-        'boxes': np.array(boxes_xywh),
-        'scores': scores,
+        'boxes': {cat: np.array(boxes_xywh[cat]) for cat in boxes_xywh},
+        'scores': {cat: np.array(scores_dict[cat]) for cat in scores_dict},
         'file_name': file_name
     })
 
-
 ground_truths = {}
+
 for i, data in enumerate(gpu_data):
     image_id = data['image_id']
     boxes = data['boxes']
     scores = data['scores']
     file_name = data['file_name']
 
-    annIds = coco.getAnnIds(imgIds=image_id, catIds=[1])
+    annIds = coco.getAnnIds(imgIds=image_id, catIds=TARGET_CATEGORIES_IDX)
     anns = coco.loadAnns(annIds) 
     
     gt_boxes = []
     gt_labels = []
     for ann in anns:
         gt_boxes.append(ann['bbox']) 
-        gt_labels.append(ann['category_id']) 
+        gt_labels.append(ann['category_id'])
     
     ground_truths[image_id] = {
         'boxes': np.array(gt_boxes),
@@ -123,273 +189,200 @@ for i, data in enumerate(gpu_data):
 print("GT AND PREDICTIONS LOADING IS COMPLETED")
 
 # best alpha computed using best_alpha_gurobi.py
-best_alpha_1 = 0.58
-best_alpha_2 = 0.60
-best_alpha_3 = 0.60
-best_alpha_4 = 0.62
+best_alpha = {'person': [0.58, 0.60, 0.60, 0.62],
+              'car'   : [0.62, 0.58, 0.58, 0.62]}
 
 # lists for times
-brute_times_case1 = []
-brute_times_case2 = []
-brute_times_case3 = []
-brute_times_case4 = []
+brute_times = {'person' : [[] for i in range(4)],
+               'car'    : [[] for i in range(4)]}
 
 # lists for predictions
-brute_results_case1 = []
-brute_results_case2 = []
-brute_results_case3 = []
-brute_results_case4 = []
+brute_results = {'person' : [[] for i in range(4)],
+                 'car'    : [[] for i in range(4)]}
 
 # lists for pred_count and gt_count for MAE
-counts_case1 = []
-counts_case2 = []
-counts_case3 = []
-counts_case4 = []
+counts = {'person' : [[] for i in range(4)],
+          'car'    : [[] for i in range(4)]}
 
 # WARM-UP
-dummy_Q = np.random.rand(3, 3).astype(np.float64)
+dummy_Q = np.random.rand(5, 5).astype(np.float64)
 
 if device.type == 'cuda':
-    _, _ = brute_force.qubo_brute_gpu(dummy_Q)
+    _, _ = brute_force.qubo_brute_gpu(dummy_Q, device)
     torch.cuda.synchronize()
+elif device.type == 'mps':
+    _, _ = brute_force.qubo_brute_gpu(dummy_Q, device)    
+    torch.mps.synchronize()
 else:
-    _, _ = brute_force.qubo_brute(dummy_Q)
-
+    _, _ = brute_force.qubo_brute_gpu(dummy_Q, device)
 
 # we analyze every image only once
 for i, data in enumerate(gpu_data):
-    boxes = data['boxes']
-    scores = data['scores']
-    image_id = data['image_id']
-    
-    # GT of this img
-    gt_count = len(ground_truths[image_id]['boxes'])
-
-    boxes = boxes.astype(np.float64)
-    scores = scores.astype(np.float64)
-    N = len(boxes) 
-
-    print(f"\n--- Image ID {image_id} ({N} box) ---")
-
-    # --- CASE 1 (IoU) ---
-    L, P = build_qubo_matrix.qubo_matrices(boxes, scores)
-    Q1 = best_alpha_1 * L - (1 - best_alpha_1) * P
-    Q1 = np.round(Q1, decimals=6)
-
-    t_start = time.perf_counter()
-    if device.type == 'cuda':
-        sol, val = brute_force.qubo_brute_gpu(Q1)
-        torch.cuda.synchronize()
-    else:
-        sol, val = brute_force.qubo_brute(Q1)
-    brute_times_case1.append(time.perf_counter() - t_start)
-    
-    sol = np.array(sol)
-
-    # print sol and energy(with -) case 1
-    print(f"Case 1 Sol: {sol.tolist()} with energy: {-val:.6f}")
-
-    # collect indices of the kept boxes
-    kept_indices = np.where(sol == 1)[0]
-    counts_case1.append((len(kept_indices), gt_count)) # for MAE
+    for cat in TARGET_CATEGORIES_IDX:
+        cat_name = coco.loadCats(cat)[0]['name']
+        boxes = data['boxes'][cat]
+        scores = data['scores'][cat]
+        image_id = data['image_id']
         
-    # I save the boxes, scores and labels corresponding to the indexes, if I don't have any boxes we skip this step
-    image_predictions = []
-    if len(kept_indices) > 0:
-        kept_boxes = boxes[kept_indices]
-        kept_scores = scores[kept_indices]
-        for k in range(len(kept_boxes)):
-            image_predictions.append({
-                "image_id": int(image_id),
-                "category_id": 1, 
-                "bbox": kept_boxes[k].tolist(),
-                "score": float(kept_scores[k])
-            })
-    brute_results_case1.extend(image_predictions)
-
-
-    # --- CASE 2 (IoU + IoM) ---
-    L, P = build_qubo_matrix2.qubo_matrices(boxes, scores)
-    Q2 = best_alpha_2 * L - (1 - best_alpha_2) * P
-    Q2 = np.round(Q2, decimals=6)
-
-    t_start = time.perf_counter()
-    if device.type == 'cuda':
-        sol, val = brute_force.qubo_brute_gpu(Q2)
-        torch.cuda.synchronize()
-    else:
-        sol, val = brute_force.qubo_brute(Q2)
-    brute_times_case2.append(time.perf_counter() - t_start)
+        # GT of this img
+        mask = ground_truths[image_id]['labels'] == cat # mask out results from other categories
+        gt_count = len(ground_truths[image_id]['boxes'][mask])
     
-    sol = np.array(sol)
-
-    # print sol and energy(with -) case 2
-    print(f"Case 2 Sol: {sol.tolist()} with energy: {-val:.6f}")
-
-    # collect indices of the kept boxes
-    kept_indices = np.where(sol == 1)[0]
-    counts_case2.append((len(kept_indices), gt_count)) # for MAE
-
-    # I save the boxes, scores and labels corresponding to the indexes, if I don't have any boxes we skip this step
-    image_predictions = []
-    if len(kept_indices) > 0:
-        kept_boxes = boxes[kept_indices]
-        kept_scores = scores[kept_indices]
-        for k in range(len(kept_boxes)):
-            image_predictions.append({
-                "image_id": int(image_id),
-                "category_id": 1, 
-                "bbox": kept_boxes[k].tolist(),
-                "score": float(kept_scores[k])
-            })
-    brute_results_case2.extend(image_predictions)
-
-
-    # --- CASE 3 (IoU + Sp) ---
-    L, P1, P2 = build_qubo_matrix3.qubo_matrices(boxes, scores)
-    beta = (1 - best_alpha_3) / 2
-    Q3 = best_alpha_3 * L - beta * P1 - beta * P2
-    Q3 = np.round(Q3, decimals=6)
-
-    t_start = time.perf_counter()
-    if device.type == 'cuda':
-        sol, val = brute_force.qubo_brute_gpu(Q3)
-        torch.cuda.synchronize()
-    else:
-        sol, val = brute_force.qubo_brute(Q3)
-    brute_times_case3.append(time.perf_counter() - t_start)
+        boxes = boxes.astype(np.float64)
+        scores = scores.astype(np.float64)
+        N = len(boxes) 
     
-    sol = np.array(sol)
+        print(f"\n--- Image ID {image_id} ({N} predicted box for '{cat_name}') ---")
 
-    # print sol and energy(with -) case 3
-    print(f"Case 3 Sol: {sol.tolist()} with energy: {-val:.6f}")
+        # loop over penalty cases
 
-    # collect indices of the kept boxes
-    kept_indices = np.where(sol == 1)[0]
-    counts_case3.append((len(kept_indices), gt_count)) # for MAE
-        
-    # I save the boxes, scores and labels corresponding to the indexes, if I don't have any boxes we skip this step
-    image_predictions = []
-    if len(kept_indices) > 0:
-        kept_boxes = boxes[kept_indices]
-        kept_scores = scores[kept_indices]
-        for k in range(len(kept_boxes)):
-            image_predictions.append({
-                "image_id": int(image_id),
-                "category_id": 1, 
-                "bbox": kept_boxes[k].tolist(),
-                "score": float(kept_scores[k])
-            })
-    brute_results_case3.extend(image_predictions)
+        for case in range(4):
 
+            # build Q matrix
+            if case == 0:
+                # --- CASE 1 (IoU) ---
+                L, P = build_qubo_matrix.qubo_matrices(boxes, scores)
+                Q = best_alpha[cat_name][0] * L - (1 - best_alpha[cat_name][0]) * P
+            elif case == 1:
+                # --- CASE 2 (IoU + IoM) ---
+                L, P = build_qubo_matrix2.qubo_matrices(boxes, scores)
+                Q = best_alpha[cat_name][1] * L - (1 - best_alpha[cat_name][1]) * P
+            elif case == 2:
+                # --- CASE 3 (IoU + Sp) ---
+                L, P1, P2 = build_qubo_matrix3.qubo_matrices(boxes, scores)
+                beta = (1 - best_alpha[cat_name][2]) / 2
+                Q = best_alpha[cat_name][2] * L - beta * P1 - beta * P2
+            elif case == 3:
+                # --- CASE 4 (IoU+IoM + Sp) ---
+                L, P1, P2 = build_qubo_matrix4.qubo_matrices(boxes, scores)
+                beta = (1 - best_alpha[cat_name][3]) / 2
+                Q = best_alpha[cat_name][3] * L - beta * P1 - beta * P2
 
-    # --- CASE 4 (IoU+IoM + Sp) ---
-    L, P1, P2 = build_qubo_matrix4.qubo_matrices(boxes, scores)
-    beta = (1 - best_alpha_4) / 2
-    Q4 = best_alpha_4 * L - beta * P1 - beta * P2
-    Q4 = np.round(Q4, decimals=6)
+            Q = np.round(Q, decimals=6)
 
-    t_start = time.perf_counter()
-    if device.type == 'cuda':
-        sol, val = brute_force.qubo_brute_gpu(Q4)
-        torch.cuda.synchronize()
-    else:
-        sol, val = brute_force.qubo_brute(Q4)
-    brute_times_case4.append(time.perf_counter() - t_start)
+            t_start = time.perf_counter()
+            if device.type == 'cuda':
+                sol, val = brute_force.qubo_brute_gpu(Q,device)
+                torch.cuda.synchronize()
+            elif device.type == 'mps':
+                sol, val = brute_force.qubo_brute_gpu(Q,device)
+                torch.mps.synchronize()
+            else:
+                sol, val = brute_force.qubo_brute_gpu(Q, device)
+
+            brute_times[cat_name][case].append(time.perf_counter() - t_start)
+            
+            sol = np.array(sol)
     
-    sol = np.array(sol)
-
-    # print sol and energy(with -) case 4
-    print(f"Case 4 Sol: {sol.tolist()} with energy: {-val:.6f}")
-
-    # collect indices of the kept boxes
-    kept_indices = np.where(sol == 1)[0]
-    counts_case4.append((len(kept_indices), gt_count)) # for MAE
+            # print sol and energy(with -) case 1
+            print(f"Case {case + 1} Sol: {sol.tolist()} with energy: {-val:.6f}")
     
-    # I save the boxes, scores and labels corresponding to the indexes, if I don't have any boxes we skip this step
-    image_predictions = []
-    if len(kept_indices) > 0:
-        kept_boxes = boxes[kept_indices]
-        kept_scores = scores[kept_indices]
-        for k in range(len(kept_boxes)):
-            image_predictions.append({
-                "image_id": int(image_id),
-                "category_id": 1, 
-                "bbox": kept_boxes[k].tolist(),
-                "score": float(kept_scores[k])
-            })
-    brute_results_case4.extend(image_predictions)
-
-    print(f"Brute force: Processed {i + 1} / {len(gpu_data)} images...")
-
-
+            # collect indices of the kept boxes
+            kept_indices = np.where(sol == 1)[0]
+            counts[cat_name][case].append((len(kept_indices), gt_count)) # for MAE
+            
+            # I save the boxes, scores and labels corresponding to the indexes, if I don't have any boxes we skip this step
+            image_predictions = []
+            if len(kept_indices) > 0:
+                kept_boxes = boxes[kept_indices]
+                kept_scores = scores[kept_indices]
+                for k in range(len(kept_boxes)):
+                    image_predictions.append({
+                        "image_id": int(image_id),
+                        "category_id": cat, 
+                        "bbox": kept_boxes[k].tolist(),
+                        "score": float(kept_scores[k])
+                    })
+            brute_results[cat_name][case].extend(image_predictions)
+    
+        print(f"Brute force: Processed {i + 1} / {len(gpu_data)} images...")
 
 # --- FINAL SUMMARY TIME TABLE ---
 table_brute = PrettyTable()
 table_brute.title = "Brute Force - Execution Times"
 
-n_boxes_list = [len(data['boxes']) for data in gpu_data]
-header_times = ["Config."] + [f"{n}-box (s)" for n in n_boxes_list]
+header_times = ["Config."] + [f"ID_{data['image_id']} (s)" for data in gpu_data]
+
+
 table_brute.field_names = header_times
 
-table_brute.add_row(["Case 1"] + [f"{t:.4f}" for t in brute_times_case1])
-table_brute.add_row(["Case 2"] + [f"{t:.4f}" for t in brute_times_case2])
-table_brute.add_row(["Case 3"] + [f"{t:.4f}" for t in brute_times_case3])
-table_brute.add_row(["Case 4"] + [f"{t:.4f}" for t in brute_times_case4])
+for cat in TARGET_CATEGORIES_IDX:
+    cat_name = coco.loadCats(cat)[0]['name']
+    table_brute.add_row([cat_name] + ["" for t in brute_times[cat_name][0]], divider=True)
+    table_brute.add_row(["Case 1"] + [f"{t:.4f}" for t in brute_times[cat_name][0]])
+    table_brute.add_row(["Case 2"] + [f"{t:.4f}" for t in brute_times[cat_name][1]])
+    table_brute.add_row(["Case 3"] + [f"{t:.4f}" for t in brute_times[cat_name][2]])
+    table_brute.add_row(["Case 4"] + [f"{t:.4f}" for t in brute_times[cat_name][3]])
+    table_brute.add_divider()
 
 print(table_brute)
 print("\n")
 
 
-# --- FINAL SUMMARY METRICS TABLE ---
+# --- FINAL SUMMARY METRICS TABLE (per category) ---
 table_metrics = PrettyTable()
 table_metrics.title = "Brute Force - Metrics"
 table_metrics.field_names = ["n. boxes", "Config.", "F1", "mAP(std)", "mAP(.50)", "mAR(10)", "mAR(100)", "MAE"]
 
-cases_info = [
-    ('Case 1', brute_results_case1, counts_case1),
-    ('Case 2', brute_results_case2, counts_case2),
-    ('Case 3', brute_results_case3, counts_case3),
-    ('Case 4', brute_results_case4, counts_case4)
-]
-
 original_stdout = sys.stdout
 
-for i, data in enumerate(gpu_data):
-    n_boxes = len(data['boxes'])
-    img_id = data['image_id']
+all_img_ids = [d['image_id'] for d in gpu_data]
 
-    for case_idx, (case_name, preds_all, counts_all) in enumerate(cases_info):
-        
-        preds_img = [p for p in preds_all if p['image_id'] == img_id]
-        
-        kept_boxes, gt_boxes = counts_all[i]
-        mae = abs(kept_boxes - gt_boxes)
-        
+# ============================================================
+# GLOBAL ANALYSIS (all categories)
+# ============================================================
+
+cases_info = [
+    ("Case 1", {cn: brute_results[cn][0] for cn in TARGET_CATEGORIES}, {cn: counts[cn][0] for cn in TARGET_CATEGORIES}),
+    ("Case 2", {cn: brute_results[cn][1] for cn in TARGET_CATEGORIES}, {cn: counts[cn][1] for cn in TARGET_CATEGORIES}),
+    ("Case 3", {cn: brute_results[cn][2] for cn in TARGET_CATEGORIES}, {cn: counts[cn][2] for cn in TARGET_CATEGORIES}),
+    ("Case 4", {cn: brute_results[cn][3] for cn in TARGET_CATEGORIES}, {cn: counts[cn][3] for cn in TARGET_CATEGORIES})
+]
+
+for i, data in enumerate(gpu_data):
+    img_id = data['image_id']
+    n_boxes = sum(len(data['boxes'][cat]) for cat in TARGET_CATEGORIES_IDX)  # total boxes, both categories
+
+    for case_idx, (case_name, preds_by_cat, counts_by_cat) in enumerate(cases_info):
+
+        # pool predictions from both categories, for this image only
+        preds_img = []
+        for cn in TARGET_CATEGORIES:
+            preds_img.extend([p for p in preds_by_cat[cn] if p['image_id'] == img_id])
+
+        # pool MAE across both categories, for this image only
+        total_ae = 0
+        for cn in TARGET_CATEGORIES:
+            kept_boxes, gt_boxes = counts_by_cat[cn][i]
+            total_ae += abs(kept_boxes - gt_boxes)
+        mae = total_ae / len(TARGET_CATEGORIES)
+
         if len(preds_img) == 0:
             f1, mAP_std, mAP_50, mAR_10, mAR_100 = 0.0, 0.0, 0.0, 0.0, 0.0
         else:
             coco_dt = coco.loadRes(preds_img)
             coco_eval = COCOeval(coco, coco_dt, 'bbox')
             coco_eval.params.imgIds = [img_id]
-            coco_eval.params.catIds = [1]
-            
-            sys.stdout = open(os.devnull, 'w') # silence print
+            coco_eval.params.catIds = TARGET_CATEGORIES_IDX  # both categories, this image only
+
+            sys.stdout = open(os.devnull, 'w')
             try:
                 coco_eval.evaluate()
                 coco_eval.accumulate()
                 coco_eval.summarize()
-                
+
                 mAP_std = coco_eval.stats[0]
                 mAP_50 = coco_eval.stats[1]
-                mAR_10 = coco_eval.stats[7] 
+                mAR_10 = coco_eval.stats[7]
                 mAR_100 = coco_eval.stats[8]
             except Exception:
                 mAP_std = mAP_50 = mAR_10 = mAR_100 = 0.0
             finally:
                 sys.stdout = original_stdout
-                
-            precision, recall, f1 = metrics.compute_metrics(coco, preds_img, [img_id])
+
+            precision, recall, f1 = metrics.compute_metrics(
+                coco, preds_img, [img_id], cat_ID=TARGET_CATEGORIES_IDX
+            )
 
         col_n_boxes = str(n_boxes) if case_idx == 0 else ""
 
@@ -403,9 +396,85 @@ for i, data in enumerate(gpu_data):
             f"{mAR_100:.4f}",
             f"{mae:.3f}"
         ])
-        
+
     if i < len(gpu_data) - 1:
         table_metrics.add_row(["-"*8, "-"*8, "-"*6, "-"*8, "-"*8, "-"*8, "-"*8, "-"*6])
+
+table_metrics.add_divider()
+
+# ============================================================
+# PER-CATEGORY ANALYSIS
+# ============================================================
+
+for cat in TARGET_CATEGORIES_IDX:
+    cat_name = coco.loadCats(cat)[0]['name']
+
+    table_metrics.add_row([cat_name] + ["" for t in range(len(table_metrics.field_names)-1)], divider=True)
+
+    cases_info = [
+        ('Case 1', brute_results[cat_name][0], counts[cat_name][0]),
+        ('Case 2', brute_results[cat_name][1], counts[cat_name][1]),
+        ('Case 3', brute_results[cat_name][2], counts[cat_name][2]),
+        ('Case 4', brute_results[cat_name][3], counts[cat_name][3])
+    ]
+    
+    original_stdout = sys.stdout
+    
+    for i, data in enumerate(gpu_data):
+        n_boxes = len(data['boxes'][cat])
+        img_id = data['image_id']
+
+
+        for case_idx, (case_name, preds_all, counts_all) in enumerate(cases_info):
+            
+            preds_img = [p for p in preds_all if p['image_id'] == img_id]
+            
+            kept_boxes, gt_boxes = counts_all[i]
+            mae = abs(kept_boxes - gt_boxes)
+            
+            if len(preds_img) == 0:
+                f1, mAP_std, mAP_50, mAR_10, mAR_100 = 0.0, 0.0, 0.0, 0.0, 0.0
+            else:
+                coco_dt = coco.loadRes(preds_img)
+                coco_eval = COCOeval(coco, coco_dt, 'bbox')
+                coco_eval.params.imgIds = [img_id]
+                coco_eval.params.catIds = [cat]
+                
+                sys.stdout = open(os.devnull, 'w') # silence print
+                try:
+                    coco_eval.evaluate()
+                    coco_eval.accumulate()
+                    coco_eval.summarize()
+                    
+                    mAP_std = coco_eval.stats[0]
+                    mAP_50 = coco_eval.stats[1]
+                    mAR_10 = coco_eval.stats[7] 
+                    mAR_100 = coco_eval.stats[8]
+
+                except Exception:
+                    mAP_std = mAP_50 = mAR_10 = mAR_100 = 0.0
+                finally:
+                    sys.stdout = original_stdout
+                    
+                precision, recall, f1 = metrics.compute_metrics(coco, preds_img, [img_id], cat_ID=[cat])
+    
+            col_n_boxes = str(n_boxes) if case_idx == 0 else ""
+    
+            table_metrics.add_row([
+                col_n_boxes,
+                case_name,
+                f"{f1:.4f}",
+                f"{mAP_std:.4f}",
+                f"{mAP_50:.4f}",
+                f"{mAR_10:.4f}",
+                f"{mAR_100:.4f}",
+                f"{mae:.3f}"
+            ])
+            
+        if i < len(gpu_data) - 1:
+            table_metrics.add_row(["-"*8, "-"*8, "-"*6, "-"*8, "-"*8, "-"*8, "-"*8, "-"*6])
+
+    table_metrics.add_divider()
 
 print(table_metrics)
 print("\n")

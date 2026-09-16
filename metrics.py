@@ -2,7 +2,7 @@ import IoU
 import numpy as np
 
 
-def compute_metrics(coco_gt, predictions_list, image_ids_list, iou_threshold=0.5):
+def compute_metrics(coco_gt, predictions_list, image_ids_list, iou_threshold=0.5, cat_ID=[1]):
     """
     Compute Precision, Recall, F1 (IoU=0.5)
     """
@@ -22,7 +22,7 @@ def compute_metrics(coco_gt, predictions_list, image_ids_list, iou_threshold=0.5
     for img_id in image_ids_list:
 
         # Ground Truths
-        ann_ids = coco_gt.getAnnIds(imgIds=img_id, catIds=[1])
+        ann_ids = coco_gt.getAnnIds(imgIds=img_id, catIds=cat_ID)
         anns = coco_gt.loadAnns(ann_ids)
         gt_boxes = [a['bbox'] for a in anns] # [x,y,w,h]
         

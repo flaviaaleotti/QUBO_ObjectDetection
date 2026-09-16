@@ -123,7 +123,49 @@ def solve_gpu(Q: np.ndarray, c: np.float32) -> np.ndarray:
 
     return solutions.copy_to_host()
 
-def qubo_brute_gpu(Q):
+import torch
+import time
+def solve_gpu_torch(Q: np.ndarray, c: float, device: torch.device) -> np.ndarray:
+    """Solve QUBO H(x) = x^T Q x + c by brute-force enumeration.
+
+    Works on 'cuda', 'mps', or 'cpu' — same code path for all.
+    """
+    assert Q.ndim == 2 and Q.shape[0] == Q.shape[1], "Q must be a square matrix."
+
+    nbits = Q.shape[0]
+    N = 2 ** nbits
+
+    Q_t = torch.as_tensor(Q, dtype=torch.float32, device=device)
+
+    if device.type == 'cuda':
+        torch.cuda.synchronize()
+    elif device.type == 'mps':
+        torch.mps.synchronize()
+
+    t0 = time.perf_counter()
+
+    # generate all 2^nbits bit combinations as a (N, nbits) matrix of 0/1
+    idx = torch.arange(N, device=device, dtype=torch.int64)
+    bits = ((idx.unsqueeze(1) >> torch.arange(nbits, device=device)) & 1).float()
+    # bits[i] is the bit vector for state i, matching your cu_bits(idx, xs) convention
+    # (check bit order matches your original cu_bits — see note below)
+
+    # compute x^T Q x for every row at once: (N, nbits) @ (nbits, nbits) -> (N, nbits), then dot with bits
+    Qx = bits @ Q_t                      # (N, nbits)
+    energies = (Qx * bits).sum(dim=1) + c  # (N,)
+
+    if device.type == 'cuda':
+        torch.cuda.synchronize()
+    elif device.type == 'mps':
+        torch.mps.synchronize()
+
+    elapsed = time.perf_counter() - t0
+    print(f"[solve_gpu] nbits={nbits}, N=2^{nbits}={N}, device={device}, "
+          f"time={elapsed*1000:.3f} ms")
+
+    return energies.cpu().numpy()
+
+def qubo_brute_gpu(Q, device):
     """
     Wrapper that uses the GPU via Numba and formats the output 
     to match the structure expected by the main script.
@@ -132,8 +174,10 @@ def qubo_brute_gpu(Q):
         best_x (np.array): Binary vector of the best solution found.
         best_val (float): The energy value of the best solution.
     """
+    # start timer
+
     # Get all energies (2^N values) calculated in parallel
-    all_energies = solve_gpu(Q, c=0.0)
+    all_energies = solve_gpu_torch(Q, c=0.0, device=device)
     
     # Find the winner
     # we look for the highest value (argmax).
