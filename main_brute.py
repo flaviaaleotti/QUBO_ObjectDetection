@@ -25,8 +25,32 @@ import brute_force
 logging.getLogger("torchvision").setLevel(logging.ERROR)
 logging.getLogger("torch").setLevel(logging.ERROR)
 
+
+import cv2
+# helper to visualize results vs ground truth
+def visualize_boxes(image_path, gt, pred, output_filename):
+    """
+    Draw boxes for ground truth in red and prediction in green
+    """
+    image = cv2.imread(image_path)
+
+    # colors are BGR (Blue, Green, Red), not RGB
+    red = (0, 0, 255)     # red->gt
+    green = (0, 255, 0)   # green->box
+
+    for box in gt:
+        x, y, w, h = [int(b) for b in box]
+        cv2.rectangle(image, (x, y), (x + w, y + h), red, 2)
+
+    for box in pred:
+        x, y, w, h = [int(b) for b in box]
+        cv2.rectangle(image, (x, y), (x + w, y + h), green, 2)
+
+    # image saving
+    cv2.imwrite(output_filename, image)
+
 # path to the file containing the ground truths for each image (called with an ID)
-instances_file = '../../coco2017/annotations/instances_val2017.json'
+instances_file = os.path.join(os.environ["COCO_DATASET"], "annotations/instances_val2017.json")
 coco = COCO(instances_file) #initialization
 
 TARGET_CATEGORIES = ['person', 'car']
@@ -128,7 +152,7 @@ for i, img_id in enumerate(image_IDs):
     file_name = img_info['file_name']
 
     # BOUNDING BOXES
-    image_path = f"../../coco2017/val2017/{file_name}"
+    image_path = os.path.join(os.environ["COCO_DATASET"], "val2017", file_name)
 
     t_rcnn_start = time.perf_counter()
     raw_boxes, scores, _, labels= RCNN.faster_rcnn(image_path, model, device, TARGET_CATEGORIES_IDX)
@@ -152,8 +176,8 @@ for i, img_id in enumerate(image_IDs):
         scores_dict[labels[box]].append(scores[box])
     
     print(f"[{valid_count}] Id imm: {img_id} | Nome imm: {file_name} | ", end="")
-    for i in TARGET_CATEGORIES_IDX:
-        print(f"Box trovate per '{i}': {len(boxes_xywh[i])} | ", end="")
+    for i in range(len(TARGET_CATEGORIES_IDX)):
+        print(f"Box trovate per '{TARGET_CATEGORIES[i]}': {len(boxes_xywh[TARGET_CATEGORIES_IDX[i]])} | ", end="")
     print(f"Tempo RCNN: {t_rcnn_end - t_rcnn_start:.3f}s")
 
     gpu_data.append({
@@ -216,6 +240,13 @@ elif device.type == 'mps':
 else:
     _, _ = brute_force.qubo_brute_gpu(dummy_Q, device)
 
+# Create folder to store image results
+os.makedirs("./images", exist_ok=True)
+for cat in TARGET_CATEGORIES:
+    os.makedirs(f"./images/{cat}", exist_ok=True)
+    for case in range(1,5):
+        os.makedirs(f"./images/{cat}/case_{case}", exist_ok=True)
+
 # we analyze every image only once
 for i, data in enumerate(gpu_data):
     for cat in TARGET_CATEGORIES_IDX:
@@ -223,6 +254,11 @@ for i, data in enumerate(gpu_data):
         boxes = data['boxes'][cat]
         scores = data['scores'][cat]
         image_id = data['image_id']
+
+        # retrieve info to draw boxes on the current image (predictions vs GT)
+        img_info = coco.loadImgs(image_id)[0]
+        file_name = img_info['file_name']
+        src_path = os.path.join(os.environ["COCO_DATASET"], "val2017", file_name)
         
         # GT of this img
         mask = ground_truths[image_id]['labels'] == cat # mask out results from other categories
@@ -235,7 +271,6 @@ for i, data in enumerate(gpu_data):
         print(f"\n--- Image ID {image_id} ({N} predicted box for '{cat_name}') ---")
 
         # loop over penalty cases
-
         for case in range(4):
 
             # build Q matrix
@@ -294,6 +329,10 @@ for i, data in enumerate(gpu_data):
                         "score": float(kept_scores[k])
                     })
             brute_results[cat_name][case].extend(image_predictions)
+
+            # draw GT and predicted boxes on the current image (and save it to dst_path)
+            dst_path = f"./images/{cat_name}/case_{case+1}/{file_name}"
+            visualize_boxes(src_path, ground_truths[image_id]['boxes'][mask], kept_boxes, dst_path)
     
         print(f"Brute force: Processed {i + 1} / {len(gpu_data)} images...")
 
