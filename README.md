@@ -194,7 +194,7 @@ The D-Wave QPU is run with 900 reads. Results are saved incrementally to JSON to
 
 ## External Dependencies (not in repository)
 
-- COCO 2017 dataset (env v ariable: `COCO_DATASET`)
+- COCO 2017 dataset (env variable: `COCO_DATASET`)
 - Gurobi license
 - D-Wave API credentials and QPU access
 
@@ -215,7 +215,7 @@ The script `main_QUBO.py` already contains the alpha optimal values for the 'per
 For any additional class, the user must perform a scan over the images in the COCO validation dataset that contain objects of the target class, in order to evaluate the best alpha value for each penalty case. To do this, the script `best_alpha_gurobi.py` or `best_alpha_sa.py` must be edited to set the variable `TARGET_CATEGORY` equal to the new category name (currently set to `car`).
 Running the script will then print the best alpha values on screen.
 
-The obtained alpha values for penalty cases 1, 2, 3 and 4 must be added as list to the dictionary `best_alpha` in `main_QUBO.py`, using the new. category name as key.
+The obtained alpha values for penalty cases 1, 2, 3 and 4 must be added as list to the dictionary `best_alpha` in `main_QUBO.py`, using the new category name as key.
 
 Additionally, the `SOLVER` variable must be set equal to `gurobi`, `sa` or `qa` to use the desires QUBO solver, and the `TARGET_CATEGORIES` must be edited to contain all desired category names (lowercase).
 
