@@ -1,6 +1,8 @@
-# Towards Quantum Approaches for Object Detection using QUBO Formulations
+# QUBO_ObjectDetection
 
-A research project (Master's thesis) that reformulates the **Non-Maximum Suppression (NMS)** post-processing step in object detection as a **Quadratic Unconstrained Binary Optimization (QUBO)** problem and solves it using classical, simulated, and D-Wave quantum annealing hardware.
+This repo is forked from *"Towards Quantum Approaches for Object Detection using QUBO Formulations"*, a research project (Master's thesis) that reformulates the **Non-Maximum Suppression (NMS)** post-processing step in object detection as a **Quadratic Unconstrained Binary Optimization (QUBO)** problem and solves it using classical, simulated, and D-Wave quantum annealing hardware.
+
+The main branch corresponds to the original code, while this 'multiclass1' branch extends the code capabilities beyond the 'person' class of objects. 
 
 ---
 
@@ -133,7 +135,9 @@ Used to verify correctness of other solvers on small instances.
 │
 ├── plots_for_6img.py           # Plots for the 6-image experiments (Gurobi, SA, QA)
 ├── plot_for_291img.py          # Plots for the 291-image experiment (Gurobi, SA, QA)
-└── draw_boxes_on_images.py     # Visual box comparison (Gurobi, SA, QA)
+└── draw_boxes_on_images.py     # Visual box comparison 
+│
+├── main_QUBO.py  # multiclass solver (Gurobi, SA, QA)
 ```
 
 ---
@@ -190,6 +194,35 @@ The D-Wave QPU is run with 900 reads. Results are saved incrementally to JSON to
 
 ## External Dependencies (not in repository)
 
-- COCO 2017 dataset (path: `/home/scampacci/coco2017/`)
+- COCO 2017 dataset (env v ariable: `COCO_DATASET`)
 - Gurobi license
 - D-Wave API credentials and QPU access
+
+---
+
+## Multiclass Extension: User Guide
+
+Before using any script in the repository, the COCO dataset must be downloaded, and its path saved in an env variable
+````
+export COCO_DATASET=/path/to/coco2017
+````
+
+
+Each class of objects to detect must have a corresponding list of best alpha values to be used when building the QUBO matrices corresponding to the various penalty cases.
+
+The script `main_QUBO.py` already contains the alpha optimal values for the 'person' and 'car' classes.
+
+For any additional class, the user must perform a scan over the images in the COCO validation dataset that contain objects of the target class, in order to evaluate the best alpha value for each penalty case. To do this, the script `best_alpha_gurobi.py` or `best_alpha_sa.py` must be edited to set the variable `TARGET_CATEGORY` equal to the new category name (currently set to `car`).
+Running the script will then print the best alpha values on screen.
+
+The obtained alpha values for penalty cases 1, 2, 3 and 4 must be added as list to the dictionary `best_alpha` in `main_QUBO.py`, using the new. category name as key.
+
+Additionally, the `SOLVER` variable must be set equal to `gurobi`, `sa` or `qa` to use the desires QUBO solver, and the `TARGET_CATEGORIES` must be edited to contain all desired category names (lowercase).
+
+Eventually, the script can be run as
+````
+python3 main_QUBO.py
+````
+processing times (per image, per penalty case) as well as accuracy metrics (per image, per penalty case) will be printed on screen.
+
+

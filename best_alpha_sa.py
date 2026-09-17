@@ -30,6 +30,8 @@ import neal
 logging.getLogger("torchvision").setLevel(logging.ERROR)
 logging.getLogger("torch").setLevel(logging.ERROR)
 
+TARGET_CATEGORY = 'car'
+
 # Simulated Annealing initialization
 sa_sampler = neal.SimulatedAnnealingSampler()
 
@@ -38,7 +40,7 @@ instances_file = '../../coco2017/annotations/instances_val2017.json'
 coco = COCO(instances_file) #initialization
 
 # select only images that have people (and that have people as ground truth)
-catIds = coco.getCatIds(catNms=['car'])
+catIds = coco.getCatIds(catNms=[TARGET_CATEGORY])
 image_IDs = coco.getImgIds(catIds=catIds) # Image IDs
 
 # we reduce the analysis to 300 images
@@ -94,7 +96,7 @@ for i, img_id in enumerate(image_IDs):
     t_rcnn_start = time.perf_counter()
 
     # now we use GPU to run the model (if available)
-    raw_boxes, scores, original_image = RCNN.faster_rcnn(image_path, model, device) # !!! boxes are in the format [x1, y1, x2, y2]
+    raw_boxes, scores, original_image, labels = RCNN.faster_rcnn(image_path, model, device) # !!! boxes are in the format [x1, y1, x2, y2]
     
     # cuda synchronization
     if device.type == 'cuda':
@@ -128,6 +130,7 @@ for i, img_id in enumerate(image_IDs):
         'image_id': img_id,
         'boxes': np.array(boxes_xywh),
         'scores': scores,
+        'labels' : labels,
         'file_name': file_name
     })
 
